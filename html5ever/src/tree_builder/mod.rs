@@ -1119,6 +1119,12 @@ where
             .any(|elem| self.html_elem_named(elem, name.clone()))
     }
 
+    // VIPER-PATCH(svg-script-pause): whether the current node is an SVG
+    // script element, for the "script" end tag in foreign content.
+    fn current_node_is_svg_script(&self) -> bool {
+        self.current_node_in(|name| name == expanded_name!(svg "script"))
+    }
+
     fn current_node_named(&self, name: LocalName) -> bool {
         self.html_elem_named(&self.current_node(), name)
     }
@@ -1849,8 +1855,22 @@ where
             _ => (),
         }
         self.adjust_foreign_attributes(&mut tag);
-        if tag.self_closing {
-            // FIXME(#118): <script /> in SVG
+        // VIPER-PATCH(svg-script-pause): a self-closing "script" start tag
+        // whose new current node is in the SVG namespace is inserted,
+        // acknowledged and then handled as the "script" end tag in foreign
+        // content: popped, with the parser paused for it; upstream did not
+        // pause here (#118).
+        // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign
+        if tag.self_closing && current_ns == ns!(svg) && tag.name == local_name!("script") {
+            self.insert_element(
+                PushFlag::Push,
+                current_ns,
+                tag.name,
+                tag.attrs,
+                tag.had_duplicate_attributes,
+            );
+            ProcessResult::Script(self.pop())
+        } else if tag.self_closing {
             self.insert_element(
                 PushFlag::NoPush,
                 current_ns,

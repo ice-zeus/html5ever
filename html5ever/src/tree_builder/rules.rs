@@ -1648,7 +1648,17 @@ where
 
             Token::Tag(tag @ tag!(<>)) => self.foreign_start_tag(tag),
 
-            // FIXME(#118): </script> in SVG
+            // VIPER-PATCH(svg-script-pause): the HTML Standard's "an end tag
+            // whose tag name is 'script', if the current node is an SVG
+            // script element" pops it and pauses the parser so the script is
+            // processed before parsing goes on; upstream did not pause here
+            // (#118). The caller keeps the insertion point and the script
+            // nesting level, as for an HTML script.
+            // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign
+            Token::Tag(tag!(</script>)) if self.current_node_is_svg_script() => {
+                ProcessResult::Script(self.pop())
+            },
+
             Token::Tag(tag @ tag!(</>)) => {
                 let mut first = true;
                 let mut stack_idx = self.open_elems.borrow().len() - 1;
