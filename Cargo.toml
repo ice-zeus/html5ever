@@ -20,9 +20,14 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 # Repo dependencies
-tendril = { version = "0.5", path = "tendril" }
-web_atoms = { version = "0.3.0", path = "web_atoms" }
-markup5ever = { version = "0.40", path = "markup5ever" }
+# VIPER-PATCH(registry-deps): Viper pins only html5ever from this fork. Its
+# markup5ever, and markup5ever's tendril and web_atoms, come from crates.io
+# at the versions Viper builds with (markup5ever 0.40.0 and web_atoms 0.3.0
+# have this commit's sources; tendril 0.5.1 is older than this commit's), so
+# a git pin of html5ever changes no other package. See PATCHES.md.
+tendril = "=0.5.1"
+web_atoms = "=0.3.0"
+markup5ever = "=0.40.0"
 xml5ever = { version = "0.40", path = "xml5ever" }
 html5ever = { version = "0.40", path = "html5ever" }
 
